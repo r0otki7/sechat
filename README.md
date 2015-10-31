@@ -10,14 +10,20 @@ Source: http://www.58bits.com/blog/2014/01/09/ssh-and-sftp-chroot-jail
 I chose to have the directory in /home/sechat folder
 
 ##Creating the directories
-_sudo mkdir -p /home/sechat/{dev,etc,lib,lib64,usr,bin,home}_
-_sudo mkdir -p /home/sechat/usr/bin_
+```
+sudo mkdir -p /home/sechat/{dev,etc,lib,lib64,usr,bin,home}_
+sudo mkdir -p /home/sechat/usr/bin
+```
  
 ##Setting owner
-_sudo chown root:root /home/sechat_
+```
+sudo chown root:root /home/sechat
+```
  
 ##Needed for the OpenSSH ChrootDirectory directive to work
-_sudo chmod go-w /home/sechat_
+```
+sudo chmod go-w /home/sechat
+```
 
 
 #Step 2: Choose the packages you want
@@ -25,46 +31,60 @@ _sudo chmod go-w /home/sechat_
 I am going for bash, cp, ls, clear, nc and mkdir to our jailed users (for starters).
 
 ##First the binaries
-_cd /home/sechat/bin_
-_sudo cp /bin/bash ._
-_sudo cp /bin/ls ._
-_sudo cp /bin/cp ._
-_sudo cp /bin/mv ._
-_sudo cp /bin/mkdir ._
-_sudo cp /bin/nc ._
- 
+```
+cd /home/sechat/bin
+sudo cp /bin/bash .
+sudo cp /bin/ls .
+sudo cp /bin/cp .
+sudo cp /bin/mv .
+sudo cp /bin/mkdir .
+sudo cp /bin/nc .
+```
+
 ##Now our chjail.sh script to bring over dependencies
-_sudo chjail.sh /bin/bash_
-_sudo chjail.sh /bin/ls_
-_sudo chjail.sh /bin/cp_
-_sudo chjail.sh /bin/mv_
-_sudo chjail.sh /bin/mkdir_
-_sudo chjail.sh /bin/nc_
+```
+sudo chjail.sh /bin/bash
+sudo chjail.sh /bin/ls
+sudo chjail.sh /bin/cp
+sudo chjail.sh /bin/mv
+sudo chjail.sh /bin/mkdir
+sudo chjail.sh /bin/nc
+```
 
 ##For clear command, if you want that
-_cd /home/sechat/usr/bin_
-_sudo cp /usr/bin/clear ._
-_sudo chjail.sh /usr/bin/clear_
+```
+cd /home/sechat/usr/bin
+sudo cp /usr/bin/clear .
+sudo chjail.sh /usr/bin/clear
+```
 
 ##Add terminal info files - so that clear, and other terminal aware commands will work.
-_cd /home/sechat/lib_
-_sudo cp -r /lib/terminfo ._
+```
+cd /home/sechat/lib
+sudo cp -r /lib/terminfo .
+```
 
 
 #Step 3: Create your user and jail group
 
 ##Create the jail group:
-_sudo groupadd sshjail_
+```
+sudo groupadd sshjail
+```
 
-Now to add new user, either use:
-_sudo adduser --home /home/sechat/home/username username_
+##Now to add new user, either use:
+```
+sudo adduser --home /home/sechat/home/username username
+```
 
 or copy (and then later remove) the home directory of an existing user into the home/sechat/home directory.
 
 If you create a new user using _sudo adduser --home /home/sechat/home/username username_ - the home directory will be created in the sechat, but the user's home directory in /etc/passwd will need to be edited to return it to /home/username - since the jail root will put home at the root again once the user is logged in.
 
-Now add the user to the jail group:
-_sudo addgroup username sshjail_
+##Now add the user to the jail group:
+```
+sudo addgroup username sshjail
+```
 
 
 #Step 4: Update sshd_config
@@ -72,11 +92,13 @@ _sudo addgroup username sshjail_
 We're going to edit the sshd_config file, removing the ForceCommand internal-sftp directive - since we don't want to limit our users to SFTP.
 Append the following to sshd_config:
 
-_Match Group sshjail_
-    _ChrootDirectory /home/sechat_
-    _X11Forwarding no_
-    _#AllowTcpForwarding no_
-    _AuthorizedKeysFile /home/sechat/home/%u/.ssh/authorized_keys_
-    
+```
+Match Group sshjail
+    ChrootDirectory /home/sechat
+    X11Forwarding no
+    #AllowTcpForwarding no
+    AuthorizedKeysFile /home/sechat/home/%u/.ssh/authorized_keys
+```
+ 
 We've chrooted to /home/sechat - and both SFTP and SSH logins will default to the user's home directory below the jail.
 Restart the sshd daemon, and you're ready to go sudo /etc/init.d/ssh restart or service ssh restart
