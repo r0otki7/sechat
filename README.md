@@ -2,7 +2,7 @@
 Simple nc based secure chat application over SSH.
 
 Needs a SSH account on the server machine, so proper settings to create that in a chroot jail are mentioned below.
-Source: http://www.58bits.com/blog/2014/01/09/ssh-and-sftp-chroot-jail
+*Source: http://www.58bits.com/blog/2014/01/09/ssh-and-sftp-chroot-jail*
 
 
 ##Step 1: Create your chroot directories
