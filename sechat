@@ -1,0 +1,73 @@
+#!/bin/bash
+#************************************************************
+#sechat: A Simple nc based secure chat application over SSH.
+#************************************************************
+#Written by r0otki7 <https://github.com/r0otki7/>
+#************************************************************
+
+echo "Welcome to the chat application"
+echo "Available interfaces on this machine: "
+intr=`ifconfig -a | sed 's/[ \t].*//;/^$/d'`
+echo "$intr"
+echo -n "Select from one of these interfaces (Write them out): "
+read intrf
+curip=`ip addr list $intrf |grep "inet " |cut -d' ' -f6|cut -d/ -f1`
+scrdir=$(dirname $0)
+curdir=`pwd`
+hstnm=`cat /etc/hostname`
+mkfifo srvrffo clntffo
+echo "Checking if SSH is running or not"
+sshst=`ps -ef | grep -v grep | grep sshd | wc -l`
+if [ $sshst -gt  0 ]
+then
+	echo "SSH Service is running.."
+else
+	echo "Starting SSH Service"
+	service ssh start
+	echo "SSH service started"
+fi
+
+function cleaning {
+	rm -rf $scrdir/{srvrffo,clntffo}
+	rm -rf $curdir/{srvrffo,clntffo}
+	kill -9 $slpsv_pid $ncsv_pid $slpcl_pid $nccl_pid
+	exit 2
+}
+trap cleaning 2
+
+echo -n "Please select if you want to be a server or client (s/c): "
+read opt
+case $opt in
+	"s" | "S" )
+		sleep 100000 > srvrffo &
+		slpsv_pid=$!
+		echo "Starting server"
+		nc -lp 55555 < srvrffo &
+		ncsv_pid=$!
+		while true;do
+			echo -n "$hstnm: "
+			read inpsv
+			echo -e "\n$hstnm: $inpsv" > srvrffo
+		done
+		;;
+	"c" | "C" )
+		sleep 100000 > clntffo &
+		slpcl_pid=$!
+		echo -n "Enter the IP to connect to: "
+		read ipd
+		echo -n "Enter the user to connect on $ipd: "
+		read usrnm
+		echo "Connecting to $ipd"
+		ssh -f -L 55555:localhost:55555 \
+                $usrnm@$ipd sleep 10; nc localhost 55555 < clntffo &
+		nccl_pid=$!
+		while true;do
+                        echo -n "$hstnm: "
+                        read inpcl
+                        echo -e "\n$hstnm: $inpcl" > clntffo
+                done
+		;;
+	*)
+		echo "Enter s or c only"
+		;;
+esac
