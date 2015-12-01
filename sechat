@@ -1,17 +1,16 @@
 #!/bin/bash
-#************************************************************
 #sechat: A Simple nc based secure chat application over SSH.
-#************************************************************
+#**************************************************
 #Written by r0otki7 <https://github.com/r0otki7/>
-#************************************************************
+#**************************************************
 
 echo "Welcome to the chat application"
 echo "Available interfaces on this machine: "
 intr=`ifconfig -a | sed 's/[ \t].*//;/^$/d'`
 echo "$intr"
-echo -n "Select from one of these interfaces (Write them out): "
+echo "Select from one of these interfaces: "
 read intrf
-curip=`ip addr list $intrf |grep "inet " |cut -d' ' -f6|cut -d/ -f1`
+curip=`ip addr list $intrf | grep "inet " | cut -d' ' -f6| cut -d/ -f1`
 scrdir=$(dirname $0)
 curdir=`pwd`
 hstnm=`cat /etc/hostname`
@@ -33,9 +32,9 @@ function cleaning {
 	kill -9 $slpsv_pid $ncsv_pid $slpcl_pid $nccl_pid
 	exit 2
 }
-trap cleaning 2
+trap cleaning 2 EXIT
 
-echo -n "Please select if you want to be a server or client (s/c): "
+echo "Please select if you want to be a server or client (s/c): "
 read opt
 case $opt in
 	"s" | "S" )
@@ -45,25 +44,35 @@ case $opt in
 		nc -lp 55555 < srvrffo &
 		ncsv_pid=$!
 		while true;do
-			echo -n "$hstnm: "
-			read inpsv
+			read -p "$hstnm: " inpsv
+			if [ "$inpsv" == "clear" ]
+			then
+				clear
+			elif [ "$inpsv" == "exit" ]
+			then
+				exit
+			fi
 			echo -e "\n$hstnm: $inpsv" > srvrffo
 		done
 		;;
 	"c" | "C" )
 		sleep 100000 > clntffo &
 		slpcl_pid=$!
-		echo -n "Enter the IP to connect to: "
+		echo "Enter the IP to connect to: "
 		read ipd
-		echo -n "Enter the user to connect on $ipd: "
-		read usrnm
 		echo "Connecting to $ipd"
 		ssh -f -L 55555:localhost:55555 \
-                $usrnm@$ipd sleep 10; nc localhost 55555 < clntffo &
+                sechat@$ipd sleep 10; nc localhost 55555 < clntffo &
 		nccl_pid=$!
 		while true;do
-                        echo -n "$hstnm: "
-                        read inpcl
+                        read -p "$hstnm: " inpcl
+			if [ "$inpcl" == "clear" ]
+                        then
+                                clear
+			elif [ "$inpcl" == "exit" ]
+                        then
+                                exit
+                        fi
                         echo -e "\n$hstnm: $inpcl" > clntffo
                 done
 		;;
