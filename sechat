@@ -7,9 +7,26 @@
 echo "Welcome to the chat application"
 echo "Available interfaces on this machine: "
 intr=`ifconfig -a | sed 's/[ \t].*//;/^$/d'`
-echo "$intr"
-echo "Select from one of these interfaces: "
-read intrf
+aintrf=`ip addr | grep "state UP" | cut -d' ' -f2 | sed 's/[!@#\$%:()]//g'`
+if [ `echo "$aintrf" | wc -m` -gt 1 ]
+then
+	echo "$aintrf found as active interface, use this one? (y/n)"
+	read intrfc
+	case $intrfc in
+		"y" | "Y" )
+			intrf=$aintrf
+			;;
+		*)
+			echo "No interfaces selected, Select from one of the following interfaces: "
+        		echo "$intr"
+        		read intrf
+			;;
+	esac
+else
+	echo "No active interfaces found, Select from one of the following interfaces: "
+	echo "$intr"
+	read intrf
+fi
 curip=`ip addr list $intrf | grep "inet " | cut -d' ' -f6| cut -d/ -f1`
 scrdir=$(dirname $0)
 curdir=`pwd`
